@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <JellyfinVersion Condition="'$(JellyfinVersion)' == ''">10.10</JellyfinVersion>
+    <DefineConstants>$(DefineConstants);JELLYFIN</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Jellyfin 10.10 uses .NET 8.0 -->
+  <PropertyGroup Condition="'$(JellyfinVersion)' == '10.10'">
+    <TargetFramework>net8.0</TargetFramework>
+    <DefineConstants>$(DefineConstants);JELLYFIN_10_10</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Jellyfin 10.11 uses .NET 9.0 -->
+  <PropertyGroup Condition="'$(JellyfinVersion)' == '10.11'">
+    <TargetFramework>net9.0</TargetFramework>
+    <DefineConstants>$(DefineConstants);JELLYFIN_10_11</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinVersion).*-*" />
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinVersion).*-*" />
+  </ItemGroup>
+</Project>

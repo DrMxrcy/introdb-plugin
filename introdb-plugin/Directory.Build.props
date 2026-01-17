@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <RootNamespace>IntroDbPlugin</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <AnalysisMode>Default</AnalysisMode>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <NoWarn>$(NoWarn);SA1309;SA1633;SA1200;SA1413;CA1848;CA1812;CA1031;SA1101;SA0001</NoWarn>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

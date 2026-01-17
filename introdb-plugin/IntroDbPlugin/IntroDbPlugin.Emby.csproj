@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <DefineConstants>$(DefineConstants);EMBY</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediaBrowser.Server.Core" Version="4.9.*" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="System.Memory" Version="4.6.0" />
+    <PackageReference Include="PolySharp" Version="1.14.1" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exclude Jellyfin-specific files -->
+    <Compile Remove="Plugin.cs" />
+    <Compile Remove="PluginServiceRegistrator.cs" />
+    <Compile Remove="Providers\IntroDbSegmentProvider.cs" />
+  </ItemGroup>
+</Project>
