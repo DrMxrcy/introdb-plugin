@@ -1,0 +1,12 @@
+# Build outputs
+build/
+**/bin/
+**/obj/
+
+# .NET
+*.user
+*.suo
+.vs/
+
+# Brainstorming sessions
+.superpowers/
