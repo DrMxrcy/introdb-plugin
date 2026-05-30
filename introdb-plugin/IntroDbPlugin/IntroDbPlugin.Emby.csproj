@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
     <PackageReference Include="System.Memory" Version="4.6.0" />
     <PackageReference Include="PolySharp" Version="1.14.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,5 +19,7 @@
     <Compile Remove="Plugin.cs" />
     <Compile Remove="PluginServiceRegistrator.cs" />
     <Compile Remove="Providers\IntroDbSegmentProvider.cs" />
+    <Compile Remove="Tasks\LibrarySyncTask.cs" />
+    <Compile Remove="Controllers\IntroDbController.cs" />
   </ItemGroup>
 </Project>

@@ -1,11 +1,11 @@
 {
   "guid": "b04f5f3e-3d3a-4a3c-9cd9-9f4f9a0c8a61",
   "name": "IntroDB",
-  "description": "Fetches intro timestamps from IntroDB for automatic skip intro functionality.",
-  "overview": "Automatically retrieves intro start/end times from the IntroDB database for TV episodes.",
+  "description": "Fetches intro, recap, and outro timestamps from IntroDB for automatic skip functionality.",
+  "overview": "Retrieves crowd-sourced intro, recap, and outro times from IntroDB for TV episodes. Supports submitting missing timestamps back to the community database.",
   "owner": "IntroDB",
   "category": "Metadata",
-  "version": "1.0.0.0",
-  "targetAbi": "10.10.0.0",
-  "changelog": "Initial release"
+  "version": "2.0.0.0",
+  "targetAbi": "{{targetAbi}}",
+  "changelog": "Upgrade to /segments API; add SQLite store, nightly sync, and admin submit queue."
 }

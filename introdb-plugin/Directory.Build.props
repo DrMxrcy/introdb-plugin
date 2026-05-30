@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>IntroDbPlugin</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Nullable>enable</Nullable>
     <AnalysisMode>Default</AnalysisMode>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
