@@ -21,7 +21,6 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
             client.BaseAddress = new Uri("https://api.introdb.app", UriKind.Absolute);
             client.Timeout = TimeSpan.FromSeconds(IntroDbClient.DefaultTimeoutSeconds);
         });
-        serviceCollection.AddSingleton<IntroDbClient>();
 
         serviceCollection.AddSingleton<SegmentStore>(sp =>
         {
