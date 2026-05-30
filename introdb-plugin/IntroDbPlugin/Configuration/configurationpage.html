@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>IntroDB</title></head>
+<body>
+<div data-role="page" class="page type-interior withSidebarNavigation" id="introDbConfigPage">
+  <div data-role="content">
+    <div class="content-primary">
+
+      <div class="verticalSection">
+        <h2 class="sectionTitle">IntroDB</h2>
+      </div>
+
+      <!-- Tab bar -->
+      <div>
+        <button class="emby-tab-button emby-tab-button-active" data-tab="settings">Settings</button>
+        <button class="emby-tab-button" data-tab="queue">Submit Queue</button>
+      </div>
+
+      <!-- Settings tab -->
+      <div id="tab-settings" class="tab-content verticalSection">
+        <form id="configForm">
+          <div class="inputContainer">
+            <label class="inputLabel" for="apiKey">API Key</label>
+            <input type="password" id="apiKey" class="emby-input" placeholder="idb_..." />
+            <div class="fieldDescription">Required to submit timestamps. Obtain at introdb.app.</div>
+          </div>
+          <div class="inputContainer">
+            <label class="inputLabel" for="minConfidence">Minimum Confidence (0–1)</label>
+            <input type="number" id="minConfidence" class="emby-input" min="0" max="1" step="0.05" />
+          </div>
+          <div class="inputContainer">
+            <label class="inputLabel">Enabled Segment Types</label>
+            <div>
+              <label><input type="checkbox" id="enableIntro" /> Intro</label>&nbsp;&nbsp;
+              <label><input type="checkbox" id="enableRecap" /> Recap</label>&nbsp;&nbsp;
+              <label><input type="checkbox" id="enableOutro" /> Outro</label>
+            </div>
+          </div>
+          <div class="inputContainer">
+            <label class="inputLabel" for="syncIntervalHours">Sync Interval (hours)</label>
+            <input type="number" id="syncIntervalHours" class="emby-input" min="1" max="168" />
+          </div>
+          <div class="inputContainer">
+            <label class="inputLabel" for="cacheTtlDays">Cache TTL (days)</label>
+            <input type="number" id="cacheTtlDays" class="emby-input" min="1" max="365" />
+          </div>
+          <p id="statusMsg" class="fieldDescription"></p>
+          <button type="submit" class="raised button-submit block emby-button">Save</button>
+          <button type="button" id="btnSyncNow" class="raised block emby-button" style="margin-top:.5em">Run Sync Now</button>
+        </form>
+      </div>
+
+      <!-- Submit queue tab -->
+      <div id="tab-queue" class="tab-content verticalSection" style="display:none">
+        <p class="fieldDescription">Episodes with no IntroDB data. Enter timestamps and submit to contribute.</p>
+        <p id="queueStatus" class="fieldDescription"></p>
+        <table style="width:100%" class="detailTable">
+          <thead><tr>
+            <th>Series</th><th>S/E</th><th>Type</th>
+            <th>Start (s)</th><th>End (s)</th><th></th>
+          </tr></thead>
+          <tbody id="queueBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    const page = document.getElementById('introDbConfigPage');
+    const statusMsg = document.getElementById('statusMsg');
+
+    function apiHeaders() {
+        return {
+            'X-Emby-Token': ApiClient.accessToken(),
+            'Content-Type': 'application/json'
+        };
+    }
+
+    function apiUrl(path) {
+        return ApiClient.serverAddress() + path;
+    }
+
+    function setStatus(msg, isError) {
+        statusMsg.textContent = msg;
+        statusMsg.style.color = isError ? 'var(--error-color,red)' : 'var(--success-color,green)';
+    }
+
+    // Tab switching
+    page.querySelectorAll('.emby-tab-button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            page.querySelectorAll('.emby-tab-button').forEach(function (b) {
+                b.classList.remove('emby-tab-button-active');
+            });
+            btn.classList.add('emby-tab-button-active');
+            page.querySelectorAll('.tab-content').forEach(function (t) {
+                t.style.display = 'none';
+            });
+            var tab = btn.dataset.tab;
+            document.getElementById('tab-' + tab).style.display = 'block';
+            if (tab === 'queue') { loadQueue(); }
+        });
+    });
+
+    // Load config on page show
+    page.addEventListener('viewshow', function () {
+        fetch(apiUrl('/IntroDB/config'), { headers: apiHeaders() })
+            .then(function (r) { return r.json(); })
+            .then(function (cfg) {
+                document.getElementById('apiKey').value = cfg.ApiKey || '';
+                document.getElementById('minConfidence').value = cfg.MinConfidence != null ? cfg.MinConfidence : 0.5;
+                document.getElementById('enableIntro').checked = cfg.EnableIntro !== false;
+                document.getElementById('enableRecap').checked = cfg.EnableRecap !== false;
+                document.getElementById('enableOutro').checked = cfg.EnableOutro !== false;
+                document.getElementById('syncIntervalHours').value = cfg.SyncIntervalHours || 24;
+                document.getElementById('cacheTtlDays').value = cfg.CacheTtlDays || 7;
+            })
+            .catch(function () { setStatus('Failed to load configuration.', true); });
+    });
+
+    // Save
+    document.getElementById('configForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var config = {
+            ApiKey: document.getElementById('apiKey').value.trim(),
+            MinConfidence: parseFloat(document.getElementById('minConfidence').value),
+            EnableIntro: document.getElementById('enableIntro').checked,
+            EnableRecap: document.getElementById('enableRecap').checked,
+            EnableOutro: document.getElementById('enableOutro').checked,
+            SyncIntervalHours: parseInt(document.getElementById('syncIntervalHours').value, 10),
+            CacheTtlDays: parseInt(document.getElementById('cacheTtlDays').value, 10)
+        };
+        fetch(apiUrl('/IntroDB/config'), {
+            method: 'POST', headers: apiHeaders(), body: JSON.stringify(config)
+        })
+            .then(function () { setStatus('Saved.'); })
+            .catch(function () { setStatus('Save failed.', true); });
+    });
+
+    // Sync now
+    document.getElementById('btnSyncNow').addEventListener('click', function () {
+        fetch(apiUrl('/IntroDB/syncNow'), { method: 'POST', headers: apiHeaders() })
+            .then(function () { setStatus('Sync queued. Check Scheduled Tasks for progress.'); })
+            .catch(function () { setStatus('Failed to queue sync.', true); });
+    });
+
+    // Load submit queue — uses safe DOM construction, no innerHTML with user data
+    function loadQueue() {
+        var status = document.getElementById('queueStatus');
+        var tbody = document.getElementById('queueBody');
+        tbody.innerHTML = '';
+        status.textContent = 'Loading…';
+
+        fetch(apiUrl('/IntroDB/missingEpisodes'), { headers: apiHeaders() })
+            .then(function (r) { return r.json(); })
+            .then(function (episodes) {
+                status.textContent = episodes.length === 0 ? 'No missing episodes.' : '';
+                episodes.forEach(function (ep) {
+                    ['intro', 'recap', 'outro'].forEach(function (type) {
+                        var tr = document.createElement('tr');
+
+                        // Series name — textContent, safe
+                        var tdSeries = document.createElement('td');
+                        tdSeries.textContent = ep.SeriesName;
+                        tr.appendChild(tdSeries);
+
+                        // S/E — textContent, safe
+                        var tdSE = document.createElement('td');
+                        tdSE.textContent = 'S' + String(ep.Season).padStart(2, '0') +
+                                           'E' + String(ep.Episode).padStart(2, '0');
+                        tr.appendChild(tdSE);
+
+                        // Type — static string, safe
+                        var tdType = document.createElement('td');
+                        tdType.textContent = type;
+                        tr.appendChild(tdType);
+
+                        // Start input
+                        var tdStart = document.createElement('td');
+                        var inpStart = document.createElement('input');
+                        inpStart.type = 'number';
+                        inpStart.step = '0.1';
+                        inpStart.min = '0';
+                        inpStart.className = 'emby-input';
+                        inpStart.style.width = '80px';
+                        tdStart.appendChild(inpStart);
+                        tr.appendChild(tdStart);
+
+                        // End input
+                        var tdEnd = document.createElement('td');
+                        var inpEnd = document.createElement('input');
+                        inpEnd.type = 'number';
+                        inpEnd.step = '0.1';
+                        inpEnd.min = '0';
+                        inpEnd.className = 'emby-input';
+                        inpEnd.style.width = '80px';
+                        tdEnd.appendChild(inpEnd);
+                        tr.appendChild(tdEnd);
+
+                        // Submit button
+                        var tdBtn = document.createElement('td');
+                        var btn = document.createElement('button');
+                        btn.textContent = 'Submit';
+                        btn.className = 'raised emby-button';
+                        btn.addEventListener('click', function () {
+                            var startSec = parseFloat(inpStart.value);
+                            var endSec = parseFloat(inpEnd.value);
+                            if (isNaN(startSec) || isNaN(endSec) || endSec <= startSec) {
+                                alert('Enter valid start and end times (end must be after start).');
+                                return;
+                            }
+                            var body = JSON.stringify({
+                                ImdbId: ep.ImdbId,
+                                Season: ep.Season,
+                                Episode: ep.Episode,
+                                SegmentType: type,
+                                StartMs: Math.round(startSec * 1000),
+                                EndMs: Math.round(endSec * 1000)
+                            });
+                            fetch(apiUrl('/IntroDB/submit'), {
+                                method: 'POST', headers: apiHeaders(), body: body
+                            })
+                                .then(function (res) {
+                                    if (res.ok) {
+                                        tr.remove();
+                                    } else {
+                                        res.json().then(function (err) {
+                                            alert('Submit failed: ' + (err.error || 'unknown error'));
+                                        });
+                                    }
+                                })
+                                .catch(function () { alert('Submit failed: network error'); });
+                        });
+                        tdBtn.appendChild(btn);
+                        tr.appendChild(tdBtn);
+
+                        tbody.appendChild(tr);
+                    });
+                });
+            })
+            .catch(function () { status.textContent = 'Failed to load missing episodes.'; });
+    }
+}());
+</script>
+</body>
+</html>
