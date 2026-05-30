@@ -10,3 +10,5 @@ build/
 
 # Brainstorming sessions
 .superpowers/
+/docs
+/.claude
