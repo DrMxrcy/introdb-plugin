@@ -40,11 +40,9 @@ build_jellyfin() {
     local version=$1
     local output_dir="$BUILD_DIR/jellyfin-$version"
 
-    # Jellyfin 10.11+ requires .NET 9
     if [ "$version" = "10.11" ]; then
         if ! check_net9_available; then
-            print_warning "Jellyfin 10.11 requires .NET 9 SDK which is not installed."
-            print_warning "Skipping Jellyfin 10.11 build. Install .NET 9 SDK to build this version."
+            print_warning "Jellyfin 10.11 requires .NET 9 SDK which is not installed. Skipping."
             return 0
         fi
     fi
@@ -54,16 +52,15 @@ build_jellyfin() {
     dotnet build "$SRC_DIR/IntroDbPlugin.csproj" \
         -c Release \
         -p:JellyfinVersion="$version" \
+        -p:AssemblyVersion="2.0.0.0" \
+        -p:FileVersion="2.0.0.0" \
         -o "$output_dir" \
         --nologo
 
-    # Clean up unnecessary files
-    rm -f "$output_dir"/*.deps.json
-    rm -f "$output_dir"/*.pdb
+    rm -f "$output_dir"/*.deps.json "$output_dir"/*.pdb
 
-    # Copy meta.json and update targetAbi for this version
-    cp "$SRC_DIR/meta.json" "$output_dir/"
-    sed -i "s/\"targetAbi\": \"10.10.0.0\"/\"targetAbi\": \"$version.0.0\"/" "$output_dir/meta.json"
+    # Substitute {{targetAbi}} token — write directly to output dir (no -i needed)
+    sed "s/{{targetAbi}}/$version.0.0/g" "$SRC_DIR/meta.json" > "$output_dir/meta.json"
 
     print_status "Jellyfin $version build complete: $output_dir"
 }
