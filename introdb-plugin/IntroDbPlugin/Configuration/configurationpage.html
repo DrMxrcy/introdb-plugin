@@ -134,17 +134,27 @@
             SyncIntervalHours: parseInt(document.getElementById('syncIntervalHours').value, 10),
             CacheTtlDays: parseInt(document.getElementById('cacheTtlDays').value, 10)
         };
+        if (isNaN(config.MinConfidence) || isNaN(config.SyncIntervalHours) || isNaN(config.CacheTtlDays)) {
+            setStatus('Invalid numeric value.', true);
+            return;
+        }
         fetch(apiUrl('/IntroDB/config'), {
             method: 'POST', headers: apiHeaders(), body: JSON.stringify(config)
         })
-            .then(function () { setStatus('Saved.'); })
+            .then(function (res) {
+                if (!res.ok) throw new Error();
+                setStatus('Saved.');
+            })
             .catch(function () { setStatus('Save failed.', true); });
     });
 
     // Sync now
     document.getElementById('btnSyncNow').addEventListener('click', function () {
         fetch(apiUrl('/IntroDB/syncNow'), { method: 'POST', headers: apiHeaders() })
-            .then(function () { setStatus('Sync queued. Check Scheduled Tasks for progress.'); })
+            .then(function (res) {
+                if (!res.ok) throw new Error();
+                setStatus('Sync queued. Check Scheduled Tasks for progress.');
+            })
             .catch(function () { setStatus('Failed to queue sync.', true); });
     });
 
@@ -152,6 +162,13 @@
     function loadQueue() {
         var status = document.getElementById('queueStatus');
         var tbody = document.getElementById('queueBody');
+        var inputs = tbody.querySelectorAll('input[type="number"]');
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].value !== '') {
+                status.textContent = 'Unsubmitted data preserved. Submit or clear inputs to refresh.';
+                return;
+            }
+        }
         tbody.innerHTML = '';
         status.textContent = 'Loading…';
 
@@ -228,7 +245,7 @@
                                     if (res.ok) {
                                         tr.remove();
                                     } else {
-                                        res.json().then(function (err) {
+                                        return res.json().then(function (err) {
                                             alert('Submit failed: ' + (err.error || 'unknown error'));
                                         });
                                     }
