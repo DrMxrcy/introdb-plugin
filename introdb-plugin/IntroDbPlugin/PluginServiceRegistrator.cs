@@ -2,32 +2,37 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 using System;
+using IntroDbPlugin.Core;
 using IntroDbPlugin.Providers;
 using IntroDbPlugin.Services;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace IntroDbPlugin;
 
-/// <summary>
-/// Register IntroDB services.
-/// </summary>
 public class PluginServiceRegistrator : IPluginServiceRegistrator
 {
-    /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        serviceCollection.AddSingleton<IMediaSegmentProvider, IntroDbSegmentProvider>();
-        serviceCollection.AddSingleton(sp =>
+        serviceCollection.AddHttpClient<IntroDbClient>(client =>
         {
-            var httpClient = new System.Net.Http.HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(IntroDbClient.DefaultTimeoutSeconds)
-            };
-
-            return new IntroDbClient(httpClient, sp.GetRequiredService<ILogger<IntroDbClient>>());
+            client.BaseAddress = new Uri("https://api.introdb.app", UriKind.Absolute);
+            client.Timeout = TimeSpan.FromSeconds(IntroDbClient.DefaultTimeoutSeconds);
         });
+
+        serviceCollection.AddSingleton<SegmentStore>(sp =>
+        {
+            var appPaths = sp.GetRequiredService<IApplicationPaths>();
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SegmentStore>>();
+            return new SegmentStore(appPaths.DataPath, logger);
+        });
+
+        // Register SegmentStore as IDisposable so Jellyfin disposes it on shutdown
+        serviceCollection.AddSingleton<IDisposable>(sp => sp.GetRequiredService<SegmentStore>());
+
+        serviceCollection.AddSingleton<IntroDbSubmissionService>();
+        serviceCollection.AddSingleton<IMediaSegmentProvider, IntroDbSegmentProvider>();
     }
 }
