@@ -11,7 +11,7 @@ using MediaBrowser.Model.Serialization;
 
 namespace IntroDbPlugin;
 
-public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
     public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
         : base(applicationPaths, xmlSerializer)

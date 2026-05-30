@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace IntroDbPlugin;
 
-public class PluginServiceRegistrator : IPluginServiceRegistrator
+public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
 {
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
@@ -21,6 +21,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             client.BaseAddress = new Uri("https://api.introdb.app", UriKind.Absolute);
             client.Timeout = TimeSpan.FromSeconds(IntroDbClient.DefaultTimeoutSeconds);
         });
+        serviceCollection.AddSingleton<IntroDbClient>();
 
         serviceCollection.AddSingleton<SegmentStore>(sp =>
         {
@@ -29,8 +30,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             return new SegmentStore(appPaths.DataPath, logger);
         });
 
-        // Register SegmentStore as IDisposable so Jellyfin disposes it on shutdown
-        serviceCollection.AddSingleton<IDisposable>(sp => sp.GetRequiredService<SegmentStore>());
+        // SegmentStore is registered as a singleton above; MS.DI tracks IDisposable
+        // singletons automatically, so no separate IDisposable registration is needed.
 
         serviceCollection.AddSingleton<IntroDbSubmissionService>();
         serviceCollection.AddSingleton<IMediaSegmentProvider, IntroDbSegmentProvider>();
