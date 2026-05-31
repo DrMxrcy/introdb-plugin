@@ -1,0 +1,68 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Restore dependencies
+        run: |
+          dotnet restore introdb-plugin/IntroDbPlugin/IntroDbPlugin.csproj
+          dotnet restore introdb-plugin/IntroDbPlugin/IntroDbPlugin.Emby.csproj
+          dotnet restore introdb-plugin/IntroDbPlugin.Tests/IntroDbPlugin.Tests.csproj
+
+      - name: Build Jellyfin 10.10
+        run: |
+          dotnet build introdb-plugin/IntroDbPlugin/IntroDbPlugin.csproj \
+            -c Release \
+            -p:JellyfinVersion=10.10 \
+            -p:AssemblyVersion=2.0.0.0 \
+            -p:FileVersion=2.0.0.0 \
+            --no-restore
+
+      - name: Build Jellyfin 10.11
+        run: |
+          dotnet build introdb-plugin/IntroDbPlugin/IntroDbPlugin.csproj \
+            -c Release \
+            -p:JellyfinVersion=10.11 \
+            -p:AssemblyVersion=2.0.0.0 \
+            -p:FileVersion=2.0.0.0 \
+            --no-restore
+
+      - name: Build Emby
+        run: |
+          dotnet build introdb-plugin/IntroDbPlugin/IntroDbPlugin.Emby.csproj \
+            -c Release \
+            --no-restore
+
+      - name: Test
+        run: |
+          dotnet test introdb-plugin/IntroDbPlugin.Tests/IntroDbPlugin.Tests.csproj \
+            --no-restore \
+            --verbosity normal
+
+      - name: Verify meta.json token substitution
+        run: |
+          mkdir -p build/jellyfin-10.10
+          sed 's/{{targetAbi}}/10.10.0.0/g' introdb-plugin/IntroDbPlugin/meta.json > build/jellyfin-10.10/meta.json
+          grep '"targetAbi": "10.10.0.0"' build/jellyfin-10.10/meta.json
+
+          mkdir -p build/jellyfin-10.11
+          sed 's/{{targetAbi}}/10.11.0.0/g' introdb-plugin/IntroDbPlugin/meta.json > build/jellyfin-10.11/meta.json
+          grep '"targetAbi": "10.11.0.0"' build/jellyfin-10.11/meta.json
